@@ -223,6 +223,9 @@ def textcounter_update_val(text, scene):
     out = ''
     neg=''
     
+    if props.ifAnimated == False:
+        return # don't modify if disabled
+    
     if props.typeEnum == 'ANIMATED':
         counter = props.counter
     elif props.typeEnum == 'DYNAMIC':
