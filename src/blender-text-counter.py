@@ -14,6 +14,9 @@ import bpy
 from bpy.props import FloatProperty, PointerProperty, BoolProperty, IntProperty, EnumProperty, StringProperty
 from bpy.app.handlers import persistent
 
+abbreviations = ["","K","M","B","T","Q"]
+millions = ["","thousand","million","billion","trillion","quadrillion"]
+
 def formatCounter(input, timeSeparators, timeLeadZeroes, timeTrailZeroes, timeModulo):
     f=0
     s=0
@@ -73,6 +76,18 @@ class TextCounter_Props(bpy.types.PropertyGroup):
     timeModulo = IntProperty(name='Last Separator Modulo', update=val_up, min=1, default=24)
     timeLeadZeroes = IntProperty(name='Leading Zeroes', update=val_up, min=1, default=2)
     timeTrailZeroes = IntProperty(name='Trailing Zeroes', update=val_up, min=1, default=2)
+
+    # newly added
+    useCommas = BoolProperty(
+        name='Use commas', default=False, update=val_up,
+        description='Use commas in large numbers')
+    useDecimalComma = BoolProperty(
+        name='Use decimal comma', default=False, update=val_up,
+        description='Use commas in place of decimals')
+    useAbbreviation = BoolProperty(name='Abbreviate', default=False, update=val_up,
+        description='Use large or small number abbreviations')
+    useAbbreviationLower = BoolProperty(name='Lowercase', default=False, update=val_up,
+        description='Use lowercase abbreviations')
 
     def dyn_get(self):
         context = bpy.context
@@ -157,6 +172,19 @@ class TextCounterPanel(bpy.types.Panel):
             row = col.row(align=True)
             row.prop(props, 'prefix')
             row.prop(props, 'sufix')
+            row = col.row(align=True)
+            colsub = row.column()
+            colsub.prop(props, 'useCommas')
+            colsub = row.column()
+            colsub.enabled = props.useCommas
+            colsub.prop(props, 'useDecimalComma')
+            row = col.row(align=True)
+            colsub = row.column()
+            colsub.prop(props, 'useAbbreviation')
+            colsub = row.column()
+            colsub.enabled = props.useAbbreviation
+            colsub.prop(props, 'useAbbreviationLower')
+
         elif props.formattingEnum == 'TIME':
             row = col.row(align=True)
             row.prop(props, 'formattedCounter')
@@ -186,6 +214,8 @@ class TextCounterPanel(bpy.types.Panel):
         
 
 def textcounter_update_val(text, scene):
+
+
     text.update_tag(refresh={'DATA'})
     props = text.data.text_counter_props
     counter = 0
@@ -218,7 +248,6 @@ def textcounter_update_val(text, scene):
     else:
         line = counter
 
-    
     if isNumeric:  
         if props.formattingEnum == 'NUMBER':
             # add minus before padding zeroes
@@ -227,7 +256,22 @@ def textcounter_update_val(text, scene):
             # int / decimal
             if not props.ifDecimal:
                 line = int(line)
-            out = ('{:.'+str(props.decimals)+'f}').format(line)
+            
+            # additional editing and segmentation
+            if props.useAbbreviation:
+                out = ('{:,.'+str(props.decimals)+'f}').format(line)
+                tmp = out.split(",")
+                #abbreviations
+                #millions
+                if len(tmp)<len(abbreviations):
+                    if props.useAbbreviationLower == True:
+                        out = str(tmp[0])+abbreviations[len(tmp)-1].lower()
+                    else:
+                        out = str(tmp[0])+abbreviations[len(tmp)-1]
+            elif props.useCommas:
+                out = ('{:,.'+str(props.decimals)+'f}').format(line)
+            else:
+                out = ('{:.'+str(props.decimals)+'f}').format(line)
 
             #padding
             arr = out.split('.')
@@ -235,6 +279,10 @@ def textcounter_update_val(text, scene):
             out = arr[0]
             if len(arr) > 1:
                 out += '.' + arr[1]
+            if props.useDecimalComma:
+                # replace . with , and vice versa
+                print("not done yet")
+
         elif props.formattingEnum == 'TIME':
             out = formatCounter(line, props.timeSeparators, props.timeLeadZeroes, props.timeTrailZeroes, props.timeModulo)
 
