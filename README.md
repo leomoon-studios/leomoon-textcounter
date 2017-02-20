@@ -21,6 +21,7 @@ With this plugin you can animate text objects. This can be used to make GUI simu
 
 ## Programmers
   - Marcin Zielinski
+  - Patrick W. Crawford
   - Amin Babaeipanah
 
 ## Changelog
