@@ -13,6 +13,7 @@ bl_info = {
 import bpy
 from bpy.props import FloatProperty, PointerProperty, BoolProperty, IntProperty, EnumProperty, StringProperty
 from bpy.app.handlers import persistent
+from math import log
 
 abbreviations = ["","K","M","B","T","Q"]
 millions = ["","thousand","million","billion","trillion","quadrillion"]
@@ -79,10 +80,10 @@ class TextCounter_Props(bpy.types.PropertyGroup):
 
     # newly added
     useCommas = BoolProperty(
-        name='Use commas', default=False, update=val_up,
+        name='Commas', default=False, update=val_up,
         description='Use commas in large numbers')
     useDecimalComma = BoolProperty(
-        name='Use decimal comma', default=False, update=val_up,
+        name='Swap . ,', default=False, update=val_up,
         description='Use commas in place of decimals')
     useAbbreviation = BoolProperty(name='Abbreviate', default=False, update=val_up,
         description='Use large or small number abbreviations')
@@ -222,7 +223,7 @@ def textcounter_update_val(text, scene):
     line = ''
     out = ''
     neg=''
-    
+
     if props.ifAnimated == False:
         return # don't modify if disabled
     
@@ -262,29 +263,52 @@ def textcounter_update_val(text, scene):
             
             # additional editing and segmentation
             if props.useAbbreviation:
-                out = ('{:,.'+str(props.decimals)+'f}').format(line)
-                tmp = out.split(",")
-                #abbreviations
-                #millions
-                if len(tmp)<len(abbreviations):
-                    if props.useAbbreviationLower == True:
-                        out = str(tmp[0])+abbreviations[len(tmp)-1].lower()
-                    else:
-                        out = str(tmp[0])+abbreviations[len(tmp)-1]
-            elif props.useCommas:
-                out = ('{:,.'+str(props.decimals)+'f}').format(line)
-            else:
-                out = ('{:.'+str(props.decimals)+'f}').format(line)
 
-            #padding
-            arr = out.split('.')
-            arr[0] = arr[0].zfill(props.padding)
-            out = arr[0]
-            if len(arr) > 1:
-                out += '.' + arr[1]
+                # get the digit count and reference the abbreviation symbol
+                if line!=0:
+                    digits = log(abs(line))/log(10)
+                    ind = int(digits/3)
+                else:
+                    ind=0
+
+                if ind<len(abbreviations) and ind>0:
+                    out = ('{0:0{pad},.{dec}f}').format(line/10**(ind*3),
+                                dec=props.decimals*int(props.ifDecimal),
+                                pad=props.padding)
+                    if props.useAbbreviationLower == True:
+                        out = out+abbreviations[ind].lower()
+                    else:
+                        out = out+abbreviations[ind]
+                else:
+                    # too big for abbreviations listed or none needed
+                    out = ('{0:0{pad},.{dec}f}').format(line,
+                                dec=props.decimals*int(props.ifDecimal),
+                                pad=props.padding)
+
+            elif props.useCommas:
+                out = ('{0:0{pad},.{dec}f}').format(line,
+                                dec=props.decimals*int(props.ifDecimal),
+                                pad=props.padding)
+            else:
+                out = ('{0:0{pad}.{dec}f}').format(line,
+                                dec=props.decimals*int(props.ifDecimal),
+                                pad=props.padding)
+
+            #padding, old method (doesn't work with commas)
+            # arr = out.split('.') #search for last numeric index instead
+            # arr[0] = arr[0].zfill(props.padding)
+            # out = arr[0]
+            # if len(arr) > 1:
+            #     out += '.' + arr[1]
+            
             if props.useDecimalComma:
                 # replace . with , and vice versa
-                print("not done yet")
+                tmp = ''
+                for c in out:
+                    if c==",":tmp+="."
+                    elif c==".":tmp+=","
+                    else:tmp+=c
+                out = tmp
 
         elif props.formattingEnum == 'TIME':
             out = formatCounter(line, props.timeSeparators, props.timeLeadZeroes, props.timeTrailZeroes, props.timeModulo)
