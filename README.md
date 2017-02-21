@@ -16,7 +16,7 @@ With this plugin you can animate text objects. This can be used to make GUI simu
   - Ability to add time counter
   - And the most important feature, GPL
 
-## Written by
+## Funded by
   - LeoMoon Studios
 
 ## Programmers
@@ -39,8 +39,8 @@ With this plugin you can animate text objects. This can be used to make GUI simu
   - 07: Go to "Font object data" tab (tab with "F" icon)
   - 08: Scroll all the way to the bottom to use the plugin
 
-## Future Ideas to Implement
+## Future Ideas
   - Nothing yet
 
 ## Compatibility
-Tested with Blender 2.75a
+Tested with Blender 2.78a
