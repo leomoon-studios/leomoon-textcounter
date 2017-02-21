@@ -24,6 +24,9 @@ With this plugin you can animate text objects. This can be used to make GUI simu
   - Patrick W. Crawford
   - Amin Babaeipanah
 
+## Donations
+The speed of future development of this plugin depends on community donations. If you use this plugin, please consider donating. Any amount will help and 100% of donations will go towards development of this plugin. You can donate using <a href="https://www.paypal.me/aminpersia" target="_blank">THIS LINK</a>.
+
 ## Changelog
   - 1.2: Time counter with many options
   - 1.1: Overriding counter with lines from text file
