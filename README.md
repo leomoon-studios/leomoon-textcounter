@@ -31,6 +31,7 @@ The speed of future development of this plugin depends on community donations. I
   - Amin Babaeipanah
 
 ## Changelog
+  - 1.3: Improved abbreviation support with decimals
   - 1.2: Time counter with many options
   - 1.1: Overriding counter with lines from text file
   - 1.0: First public release
@@ -49,4 +50,4 @@ The speed of future development of this plugin depends on community donations. I
   - N/A
 
 ## Compatibility
-Tested with Blender 2.78a
+Tested with Blender 2.78.4
