@@ -22,6 +22,9 @@ The speed of future development of this plugin depends on community donations. I
 ## Funded by
   - LeoMoon Studios
 
+## Donors
+  - Karen Carr Studio
+
 ## Programmers
   - Marcin Zielinski
   - Patrick W. Crawford
