@@ -2,7 +2,7 @@
 ## Introduction
 With this plugin you can animate text objects. This can be used to make GUI simulations.
 
-[![Text Counter for Blender](http://img.youtube.com/vi/96U0mi-j2gc/0.jpg)](http://www.youtube.com/watch?v=96U0mi-j2gc)
+[![Text Counter for Blender](http://img.youtube.com/vi/zLWJl6qGEs4/0.jpg)](http://www.youtube.com/watch?v=zLWJl6qGEs4)
 
 ## Features
   - Animated count by keying start and end numbers
