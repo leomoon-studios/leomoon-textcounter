@@ -1,8 +1,8 @@
 bl_info = {
     "name": "Text Counter",
     "author": "LeoMoon Studios - www.LeoMoon.com and Marcin Zielinski - www.marcin-zielinski.tk/en/",
-    "version": (1, 2, 1),
-    "blender": (2, 6, 9),
+    "version": (1, 3, 0),
+    "blender": (2, 80, 0),
     "location": "Font Object Data > Text Counter",
     "description": "Text counter for displays, HUDs etc.",
     "warning": "",
@@ -13,10 +13,27 @@ bl_info = {
 import bpy
 from bpy.props import FloatProperty, PointerProperty, BoolProperty, IntProperty, EnumProperty, StringProperty
 from bpy.app.handlers import persistent
-from math import log
+from math import log, ceil
 
 abbreviations = ["","K","M","B","T","Q"]
 millions = ["","thousand","million","billion","trillion","quadrillion"]
+
+def isAPI28():
+    return bpy.app.version >= (2, 80)
+
+def make_annotations(cls):
+    """Converts class fields to annotations if running with Blender 2.8"""
+    if bpy.app.version < (2, 80):
+        return cls
+    bl_props = {k: v for k, v in cls.__dict__.items() if isinstance(v, tuple)}
+    if bl_props:
+        if '__annotations__' not in cls.__dict__:
+            setattr(cls, '__annotations__', {})
+        annotations = cls.__dict__['__annotations__']
+        for k, v in bl_props.items():
+            annotations[k] = v
+            delattr(cls, k)
+    return cls
 
 def formatCounter(input, timeSeparators, timeLeadZeroes, timeTrailZeroes, timeModulo):
     f=0
@@ -64,7 +81,7 @@ class TextCounter_Props(bpy.types.PropertyGroup):
     counter = FloatProperty(name='Counter', update=val_up)
     padding = IntProperty(name='Padding', update=val_up, min=1)
     ifDecimal = BoolProperty(name='Decimal', default=False, update=val_up)
-    decimals = IntProperty(name='Decimal', update=val_up, min=0)
+    decimals = IntProperty(name='Decimal', update=val_up, min=0, default=2)
     typeEnum = EnumProperty(items=[('ANIMATED', 'Animated', 'Counter values from f-curves'), ('DYNAMIC', 'Dynamic', 'Counter values from expression')], name='Type', update=val_up, default='ANIMATED')
     formattingEnum = EnumProperty(items=[('NUMBER', 'Number', 'Counter values as numbers'), ('TIME', 'Time', 'Counter values as time')], name='Formatting Type', update=val_up, default='NUMBER')
     expr = StringProperty(name='Expression', update=val_up, default='')
@@ -79,18 +96,38 @@ class TextCounter_Props(bpy.types.PropertyGroup):
     timeTrailZeroes = IntProperty(name='Trailing Zeroes', update=val_up, min=1, default=2)
 
     # newly added
-    useCommas = BoolProperty(
-        name='Commas', default=False, update=val_up,
-        description='Use commas in large numbers')
-    useDecimalComma = BoolProperty(
-        name='Swap . ,', default=False, update=val_up,
-        description='Use commas in place of decimals')
+    useDigitGrouping = BoolProperty(
+        name='Digit Grouping', default=False, update=val_up,
+        description='Use digint grouping in large numbers')
     useAbbreviation = BoolProperty(name='Abbreviate', default=False, update=val_up,
         description='Use large or small number abbreviations')
     useAbbreviationLower = BoolProperty(name='Lowercase', default=False, update=val_up,
         description='Use lowercase abbreviations')
+    digitSeparator = EnumProperty(
+        name="Digit grouping",
+        description="Digit grouping separator",
+        items=[
+            (',', ', (Comma)', ','),
+            ('.', '. (Dot)', '.'),
+            (' ', ' (Space)', ' '),
+            ("'", "' (Apostrophe)", "'"),
+        ],
+        default=',',
+        update=val_up
+    )
+    decimalSeparator = EnumProperty(
+        name="Decimal separator",
+        description="Decimal separator",
+        items=[
+            (',', ', (Comma)', ','),
+            ('.', '. (Dot)', '.'),
+        ],
+        default='.',
+        update=val_up
+    )
 
     def dyn_get(self):
+        # shortcut vars to be used in expresion
         context = bpy.context
         C = context
         scene = C.scene
@@ -103,11 +140,6 @@ class TextCounter_Props(bpy.types.PropertyGroup):
     def form_up(self, context):
         textcounter_update_val(context.object, context.scene)
     def form_get(self):
-        f=0
-        s=0
-        m=0
-        h=0
-        out=''
         input=0
         if self.typeEnum == 'ANIMATED':
             input = float(self.counter)
@@ -142,7 +174,7 @@ class TextCounterPanel(bpy.types.Panel):
         return context.object.type == 'FONT'
 
     def draw_header(self, context):
-        self.layout.prop(context.object.data.text_counter_props, 'ifAnimated', '')
+        self.layout.prop(context.object.data.text_counter_props, 'ifAnimated', text='')
 
     def draw(self, context):
         props = context.object.data.text_counter_props
@@ -175,10 +207,9 @@ class TextCounterPanel(bpy.types.Panel):
             row.prop(props, 'sufix')
             row = col.row(align=True)
             colsub = row.column()
-            colsub.prop(props, 'useCommas')
+            colsub.prop(props, 'useDigitGrouping')
             colsub = row.column()
-            colsub.enabled = props.useCommas
-            colsub.prop(props, 'useDecimalComma')
+            colsub.enabled = props.useDigitGrouping
             row = col.row(align=True)
             colsub = row.column()
             colsub.prop(props, 'useAbbreviation')
@@ -199,22 +230,46 @@ class TextCounterPanel(bpy.types.Panel):
             row.prop(props, 'prefix')
             row.prop(props, 'sufix')
         
+        if props.formattingEnum == "NUMBER":
+            boxy = layout.box()
+            split = boxy.split()
+            col = split.column()
+            col.enabled = True if props.ifDecimal else False
+            col.prop(props, 'decimalSeparator')
+            col = split.column()
+            col.enabled = True if props.useDigitGrouping else False
+            col.prop(props, 'digitSeparator')
+
         boxy = layout.box() 
         row = boxy.row()
-        row.prop(props, 'ifTextFile')        
+        row.prop(props, 'ifTextFile')
         row = boxy.row()
         row.prop(props, "ifTextFormatting")
         row.prop_search(props, "textFile", bpy.data, "texts", text="Text File")
         if not props.ifTextFile:
             row.enabled = False
             
-        #boxy = layout.box() 
-        #row = boxy.row()
-        #row.prop(props, 'ifTextFile')
             
         
 
 def textcounter_update_val(text, scene):
+    def formatPaddingCommas(line):
+        # left_len = len(str(int(line)))
+        # left_len = ceil(log(abs(line))/log(10))
+        padding = props.padding
+        comas, comas_mod = divmod(padding, 3)
+        if comas_mod == 0:
+            # <0,>000
+            comas -= 1
+        if props.ifDecimal:
+            # include decimal dot
+            padding += 1
+        padding = padding+props.decimals*props.ifDecimal
+        padding += comas*props.useDigitGrouping
+        return ('{0:0{pad}{comma}.{dec}f}').format(line,
+                        dec=props.decimals*int(props.ifDecimal),
+                        pad=padding,
+                        comma=',' if props.useDigitGrouping else '').replace('.', '@').replace(',', props.digitSeparator).replace('@', props.decimalSeparator)
 
 
     text.update_tag(refresh={'DATA'})
@@ -272,43 +327,18 @@ def textcounter_update_val(text, scene):
                     ind=0
 
                 if ind<len(abbreviations) and ind>0:
-                    out = ('{0:0{pad},.{dec}f}').format(line/10**(ind*3),
-                                dec=props.decimals*int(props.ifDecimal),
-                                pad=props.padding)
+                    out = formatPaddingCommas(line/10**(ind*3))
                     if props.useAbbreviationLower == True:
                         out = out+abbreviations[ind].lower()
                     else:
                         out = out+abbreviations[ind]
                 else:
                     # too big for abbreviations listed or none needed
-                    out = ('{0:0{pad},.{dec}f}').format(line,
-                                dec=props.decimals*int(props.ifDecimal),
-                                pad=props.padding)
+                    out = formatPaddingCommas(line)
 
-            elif props.useCommas:
-                out = ('{0:0{pad},.{dec}f}').format(line,
-                                dec=props.decimals*int(props.ifDecimal),
-                                pad=props.padding)
             else:
-                out = ('{0:0{pad}.{dec}f}').format(line,
-                                dec=props.decimals*int(props.ifDecimal),
-                                pad=props.padding)
-
-            #padding, old method (doesn't work with commas)
-            # arr = out.split('.') #search for last numeric index instead
-            # arr[0] = arr[0].zfill(props.padding)
-            # out = arr[0]
-            # if len(arr) > 1:
-            #     out += '.' + arr[1]
+                out = formatPaddingCommas(line)
             
-            if props.useDecimalComma:
-                # replace . with , and vice versa
-                tmp = ''
-                for c in out:
-                    if c==",":tmp+="."
-                    elif c==".":tmp+=","
-                    else:tmp+=c
-                out = tmp
 
         elif props.formattingEnum == 'TIME':
             out = formatCounter(line, props.timeSeparators, props.timeLeadZeroes, props.timeTrailZeroes, props.timeModulo)
@@ -327,10 +357,15 @@ def textcounter_text_update_frame(scene):
         if text.type == 'FONT' and text.data.text_counter_props.ifAnimated:
             textcounter_update_val(text, scene)
 
+classes = (
+    TextCounter_Props,
+    TextCounterPanel,
+)
 def register():
-    bpy.utils.register_class(TextCounter_Props)
+    for cls in classes:
+        make_annotations(cls)
+        bpy.utils.register_class(cls)
     bpy.types.TextCurve.text_counter_props = PointerProperty(type = TextCounter_Props)
-    bpy.utils.register_class(TextCounterPanel)
     bpy.app.handlers.frame_change_post.append(textcounter_text_update_frame)
 
 def unregister():
