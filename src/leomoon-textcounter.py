@@ -1,7 +1,7 @@
 bl_info = {
     "name": "LeoMoon TextCounter",
     "author": "LeoMoon Studios - www.LeoMoon.com and Marcin Zielinski - www.marcin-zielinski.tk/en/",
-    "version": (1, 3, 1),
+    "version": (1, 3, 2),
     "blender": (2, 80, 0),
     "location": "Font Object Data > LeoMoon TextCounter",
     "description": "Text counter for displays, HUDs etc.",
@@ -160,10 +160,10 @@ class TextCounter_Props(bpy.types.PropertyGroup):
     
 
 #
-class TextCounterPanel(bpy.types.Panel):
+class TEXTCOUNTER1_PT_panel(bpy.types.Panel):
     """Creates a Panel in the Font properties window"""
     bl_label = "LeoMoon TextCounter"
-    bl_idname = "text_counter_panel"
+    bl_idname = "TEXTCOUNTER1_PT_panel"
     bl_space_type = 'PROPERTIES'
     bl_region_type = 'WINDOW'
     bl_context = "data"
@@ -359,7 +359,7 @@ def textcounter_text_update_frame(scene):
 
 classes = (
     TextCounter_Props,
-    TextCounterPanel,
+    TEXTCOUNTER1_PT_panel,
 )
 def register():
     for cls in classes:
@@ -370,7 +370,7 @@ def register():
 
 def unregister():
     bpy.utils.unregister_class(TextCounter_Props)
-    bpy.utils.unregister_class(TextCounterPanel)
+    bpy.utils.unregister_class(TEXTCOUNTER1_PT_panel)
     bpy.app.handlers.frame_change_post.remove(textcounter_text_update_frame)
 
 if __name__ == "__main__":
