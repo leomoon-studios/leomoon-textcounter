@@ -1,7 +1,7 @@
 bl_info = {
     "name": "LeoMoon TextCounter",
     "author": "LeoMoon Studios - www.LeoMoon.com and Marcin Zielinski - www.marcin-zielinski.tk/en/",
-    "version": (1, 3, 2),
+    "version": (1, 3, 3),
     "blender": (2, 80, 0),
     "location": "Font Object Data > LeoMoon TextCounter",
     "description": "Text counter for displays, HUDs etc.",
@@ -137,8 +137,6 @@ class TextCounter_Props(bpy.types.PropertyGroup):
             print('Expr Error: '+str(e.args))
     dynamicCounter = StringProperty(name='Dynamic Counter', get=dyn_get, default='')
     
-    def form_up(self, context):
-        textcounter_update_val(context.object, context.scene)
     def form_get(self):
         input=0
         if self.typeEnum == 'ANIMATED':
@@ -345,15 +343,16 @@ def textcounter_update_val(text, scene):
 
     #prefix/sufix  
     if props.ifTextFile:
-        text.data.body = out
+        text.original.data.body = out
         if props.ifTextFormatting and isNumeric:
-            text.data.body = props.prefix + neg + out + props.sufix
+            text.original.data.body = props.prefix + neg + out + props.sufix
     else:
-        text.data.body = props.prefix + neg + out + props.sufix 
+        text.original.data.body = props.prefix + neg + out + props.sufix
 
 @persistent  
-def textcounter_text_update_frame(scene):
-    for text in scene.objects:
+def textcounter_text_update_frame(scene, depsgraph=None):
+    for object_inst in depsgraph.object_instances:
+        text = object_inst.object
         if text.type == 'FONT' and text.data.text_counter_props.ifAnimated:
             textcounter_update_val(text, scene)
 
