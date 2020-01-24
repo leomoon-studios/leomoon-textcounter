@@ -1,7 +1,7 @@
 bl_info = {
     "name": "LeoMoon TextCounter",
     "author": "LeoMoon Studios - www.LeoMoon.com and Marcin Zielinski - www.marcin-zielinski.tk/en/",
-    "version": (1, 3, 3),
+    "version": (1, 3, 4),
     "blender": (2, 80, 0),
     "location": "Font Object Data > LeoMoon TextCounter",
     "description": "Text counter for displays, HUDs etc.",
@@ -73,6 +73,18 @@ def formatCounter(input, timeSeparators, timeLeadZeroes, timeTrailZeroes, timeMo
         
     return neg + out
 
+def dyn_get(self, evaluated_scene=None):
+    # shortcut vars to be used in expresion
+    context = bpy.context
+    C = context
+    D = bpy.data
+    S = scene = evaluated_scene if evaluated_scene else C.scene
+    try:
+        return eval(self.expr)
+    except Exception as e:
+        print('Expr Error: '+str(e.args))
+def dyn_get_str(self):
+    return str(dyn_get(self))
 #
 class TextCounter_Props(bpy.types.PropertyGroup):
     def val_up(self, context):
@@ -126,16 +138,7 @@ class TextCounter_Props(bpy.types.PropertyGroup):
         update=val_up
     )
 
-    def dyn_get(self):
-        # shortcut vars to be used in expresion
-        context = bpy.context
-        C = context
-        scene = C.scene
-        try:
-            return str(eval(self.expr))
-        except Exception as e:
-            print('Expr Error: '+str(e.args))
-    dynamicCounter = StringProperty(name='Dynamic Counter', get=dyn_get, default='')
+    dynamicCounter = StringProperty(name='Dynamic Counter', get=dyn_get_str, default='')
     
     def form_get(self):
         input=0
@@ -156,7 +159,6 @@ class TextCounter_Props(bpy.types.PropertyGroup):
 
     formattedCounter = StringProperty(name='Formatted Counter', get=form_get, set=form_set, default='')
     
-
 #
 class TEXTCOUNTER1_PT_panel(bpy.types.Panel):
     """Creates a Panel in the Font properties window"""
@@ -283,11 +285,8 @@ def textcounter_update_val(text, scene):
     if props.typeEnum == 'ANIMATED':
         counter = props.counter
     elif props.typeEnum == 'DYNAMIC':
-        try:
-            counter = eval(props.expr)
-        except Exception as e:
-            print('Expr Error: '+str(e.args))
-
+        counter = dyn_get(props, scene)
+        
     isNumeric=True #always true for counter not overrided
     if props.ifTextFile:
         txt = bpy.data.texts[props.textFile]
@@ -354,7 +353,7 @@ def textcounter_text_update_frame(scene, depsgraph=None):
     for object_inst in depsgraph.object_instances:
         text = object_inst.object
         if text.type == 'FONT' and text.data.text_counter_props.ifAnimated:
-            textcounter_update_val(text, scene)
+            textcounter_update_val(text, scene.evaluated_get(depsgraph))
 
 classes = (
     TextCounter_Props,
