@@ -45,7 +45,7 @@ def formatCounter(input, timeSeparators, timeLeadZeroes, timeTrailZeroes, timeMo
     if input < 0:
         neg = '-'
         input = abs(input)
-        
+
     if timeSeparators >= 0:
         if timeSeparators == 0:
             out = int(input)
@@ -53,7 +53,7 @@ def formatCounter(input, timeSeparators, timeLeadZeroes, timeTrailZeroes, timeMo
         else:
             s,f = divmod(int(input), timeModulo)
             out = format(f, '0'+str(timeLeadZeroes)+'d')
-            
+
     if timeSeparators >= 1:
         if timeSeparators == 1:
             out = format(s, '0'+str(timeTrailZeroes)+'d')+":"+out
@@ -70,7 +70,7 @@ def formatCounter(input, timeSeparators, timeLeadZeroes, timeTrailZeroes, timeMo
 
     if timeSeparators >= 3:
         out = format(h, '0'+str(timeTrailZeroes)+'d')+":"+out
-        
+
     return neg + out
 
 def dyn_get(self, evaluated_scene=None):
@@ -139,7 +139,7 @@ class TextCounter_Props(bpy.types.PropertyGroup):
     )
 
     dynamicCounter = StringProperty(name='Dynamic Counter', get=dyn_get_str, default='')
-    
+
     def form_get(self):
         input=0
         if self.typeEnum == 'ANIMATED':
@@ -155,10 +155,10 @@ class TextCounter_Props(bpy.types.PropertyGroup):
             counter += int(i) * 60**(len(separators)-2-idx)*self.timeModulo
         counter += int(separators[-1])
         self.counter = float(counter)
-        
+
 
     formattedCounter = StringProperty(name='Formatted Counter', get=form_get, set=form_set, default='')
-    
+
 #
 class TEXTCOUNTER1_PT_panel(bpy.types.Panel):
     """Creates a Panel in the Font properties window"""
@@ -190,9 +190,9 @@ class TEXTCOUNTER1_PT_panel(bpy.types.Panel):
             row.prop(props, 'expr')
             row = layout.row()
             row.prop(props, 'dynamicCounter')
-    
+
         #formatting type enum
-        boxy = layout.box() 
+        boxy = layout.box()
         split =  boxy.split(align=True)
         col = split.column()
         row = col.row(align=True)
@@ -229,7 +229,7 @@ class TEXTCOUNTER1_PT_panel(bpy.types.Panel):
             row = col.row(align=True)
             row.prop(props, 'prefix')
             row.prop(props, 'sufix')
-        
+
         if props.formattingEnum == "NUMBER":
             boxy = layout.box()
             split = boxy.split()
@@ -240,7 +240,7 @@ class TEXTCOUNTER1_PT_panel(bpy.types.Panel):
             col.enabled = True if props.useDigitGrouping else False
             col.prop(props, 'digitSeparator')
 
-        boxy = layout.box() 
+        boxy = layout.box()
         row = boxy.row()
         row.prop(props, 'ifTextFile')
         row = boxy.row()
@@ -248,9 +248,9 @@ class TEXTCOUNTER1_PT_panel(bpy.types.Panel):
         row.prop_search(props, "textFile", bpy.data, "texts", text="Text File")
         if not props.ifTextFile:
             row.enabled = False
-            
-            
-        
+
+
+
 
 def textcounter_update_val(text, scene):
     def formatPaddingCommas(line):
@@ -261,14 +261,14 @@ def textcounter_update_val(text, scene):
         if comas_mod == 0:
             # <0,>000
             comas -= 1
-        if props.ifDecimal:
+        if props.ifDecimal and props.decimals:
             # include decimal dot
             padding += 1
         padding = padding+props.decimals*props.ifDecimal
         padding += comas*props.useDigitGrouping
         return ('{0:0{pad}{comma}.{dec}f}').format(line,
                         dec=props.decimals*int(props.ifDecimal),
-                        pad=padding,
+                        pad=max(0,padding),
                         comma=',' if props.useDigitGrouping else '').replace('.', '@').replace(',', props.digitSeparator).replace('@', props.decimalSeparator)
 
 
@@ -281,17 +281,17 @@ def textcounter_update_val(text, scene):
 
     if props.ifAnimated == False:
         return # don't modify if disabled
-    
+
     if props.typeEnum == 'ANIMATED':
         counter = props.counter
     elif props.typeEnum == 'DYNAMIC':
         counter = dyn_get(props, scene)
-        
+
     isNumeric=True #always true for counter not overrided
     if props.ifTextFile:
         txt = bpy.data.texts[props.textFile]
         clampedCounter = max(0, min(int(counter), len(txt.lines)-1))
-        line = txt.lines[clampedCounter].body        
+        line = txt.lines[clampedCounter].body
         if props.ifTextFormatting:
             try:
                 line = float(line)
@@ -304,7 +304,7 @@ def textcounter_update_val(text, scene):
     else:
         line = counter
 
-    if isNumeric:  
+    if isNumeric:
         if props.formattingEnum == 'NUMBER':
             # add minus before padding zeroes
             neg = '-' if line < 0 else ''
@@ -312,7 +312,7 @@ def textcounter_update_val(text, scene):
             # int / decimal
             if not props.ifDecimal:
                 line = int(line)
-            
+
             # additional editing and segmentation
             if props.useAbbreviation:
 
@@ -335,12 +335,12 @@ def textcounter_update_val(text, scene):
 
             else:
                 out = formatPaddingCommas(line)
-            
+
 
         elif props.formattingEnum == 'TIME':
             out = formatCounter(line, props.timeSeparators, props.timeLeadZeroes, props.timeTrailZeroes, props.timeModulo)
 
-    #prefix/sufix  
+    #prefix/sufix
     if props.ifTextFile:
         text.original.data.body = out
         if props.ifTextFormatting and isNumeric:
@@ -348,7 +348,7 @@ def textcounter_update_val(text, scene):
     else:
         text.original.data.body = props.prefix + neg + out + props.sufix
 
-@persistent  
+@persistent
 def textcounter_text_update_frame(scene, depsgraph=None):
     for object_inst in depsgraph.object_instances:
         text = object_inst.object
