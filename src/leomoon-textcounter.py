@@ -1,6 +1,8 @@
+# Created by Styriam sp. z o.o.
+
 bl_info = {
     "name": "LeoMoon TextCounter",
-    "author": "LeoMoon Studios - www.LeoMoon.com and Marcin Zielinski - www.marcin-zielinski.tk/en/",
+    "author": "LeoMoon Studios",
     "version": (1, 3, 5),
     "blender": (2, 80, 0),
     "location": "Font Object Data > LeoMoon TextCounter",
