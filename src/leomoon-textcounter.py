@@ -4,7 +4,7 @@ bl_info = {
     "name": "LeoMoon TextCounter",
     "author": "LeoMoon Studios",
     "version": (1, 3, 5),
-    "blender": (2, 80, 0),
+    "blender": (2, 91, 1),
     "location": "Font Object Data > LeoMoon TextCounter",
     "description": "Text counter for displays, HUDs etc.",
     "warning": "",
