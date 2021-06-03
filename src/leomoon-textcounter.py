@@ -3,7 +3,7 @@
 bl_info = {
     "name": "LeoMoon TextCounter",
     "author": "LeoMoon Studios",
-    "version": (1, 3, 5),
+    "version": (1, 3, 6),
     "blender": (2, 91, 1),
     "location": "Font Object Data > LeoMoon TextCounter",
     "description": "Text counter for displays, HUDs etc.",
@@ -27,7 +27,10 @@ def make_annotations(cls):
     """Converts class fields to annotations if running with Blender 2.8"""
     if bpy.app.version < (2, 80):
         return cls
-    bl_props = {k: v for k, v in cls.__dict__.items() if isinstance(v, tuple)}
+    if bpy.app.version < (2, 93, 0):
+        bl_props = {k: v for k, v in cls.__dict__.items() if isinstance(v, tuple)}
+    else:
+        bl_props = {k: v for k, v in cls.__dict__.items() if isinstance(v, bpy.props._PropertyDeferred)}
     if bl_props:
         if '__annotations__' not in cls.__dict__:
             setattr(cls, '__annotations__', {})
