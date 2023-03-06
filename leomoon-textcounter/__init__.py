@@ -517,10 +517,9 @@ def textcounter_update_val(text, scene, depsgraph):
         # text.data.body = out
         if props.ifTextFormatting and isNumeric:
             text.original.data.body = props.prefix + neg + out + props.sufix
-            # text.data.body = props.prefix + neg + out + props.sufix
     else:
         text.original.data.body = props.prefix + neg + out + props.sufix
-        # text.data.body = props.prefix + neg + out + props.sufix
+    text.original.update_tag(refresh={'OBJECT', 'DATA', 'TIME'})
 
 @persistent
 def textcounter_text_update_frame(scene, depsgraph=None):
