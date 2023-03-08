@@ -25,7 +25,6 @@ regex_parts = (
 )
 
 regex = '|'.join(regex_parts)
-print(regex)
 
 def eval_parser(expression, begin=0, end=-1):
     offset = 0
