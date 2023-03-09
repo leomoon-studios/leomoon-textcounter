@@ -3,7 +3,7 @@
 bl_info = {
     "name": "LeoMoon TextCounter",
     "author": "LeoMoon Studios",
-    "version": (1, 3, 6),
+    "version": (1, 4, 0),
     "blender": (2, 91, 1),
     "location": "Font Object Data > LeoMoon TextCounter",
     "description": "Text counter for displays, HUDs etc.",
@@ -16,6 +16,7 @@ import bpy
 from bpy.props import FloatProperty, PointerProperty, BoolProperty, IntProperty, EnumProperty, StringProperty
 from bpy.app.handlers import persistent
 from math import log, ceil
+from . expr_deps import eval_parser, sanitize_str
 
 abbreviations = ["","K","M","B","T","Q"]
 millions = ["","thousand","million","billion","trillion","quadrillion"]
@@ -78,22 +79,187 @@ def formatCounter(input, timeSeparators, timeLeadZeroes, timeTrailZeroes, timeMo
 
     return neg + out
 
-def dyn_get(self, evaluated_scene=None):
+from mathutils import *
+from math import *
+def dyn_get(self, evaluated_scene=None, depsgraph=None):
     # shortcut vars to be used in expresion
     context = bpy.context
     C = context
+    dp = depsgraph if depsgraph else C.evaluated_depsgraph_get()
     D = bpy.data
     S = scene = evaluated_scene if evaluated_scene else C.scene
     try:
-        return eval(self.expr)
-    except Exception as e:
-        print('Expr Error: '+str(e.args))
+        # print(S.is_evaluated, eval(self.expr))
+        # rewrite expression to use evaluated objects
+        expr = sanitize_str(eval_parser(self.expr))
+        # expr = expr.replace("__","")
+        # expr = expr.replace(".__class__","")
+        # expr = expr.replace(".__base__","")
+
+
+        #make a list of safe functions
+        safe_list = ['bpy', 'C', 'D', 'Vector', 'Matrix', 'Euler', 'Quaternion', 'Color', 'geometry', 'interpolate', 'noise', 'bvhtree', 'kdtree', 'acos', 'acosh', 'asin', 'asinh', 'atan', 'atan2', 'atanh', 'ceil', 'copysign', 'cos', 'cosh', 'degrees', 'dist', 'erf', 'erfc', 'exp', 'expm1', 'fabs', 'factorial', 'floor', 'fmod', 'frexp', 'fsum', 'gamma', 'gcd', 'hypot', 'isclose', 'isfinite', 'isinf', 'isnan', 'isqrt', 'lcm', 'ldexp', 'lgamma', 'log', 'log1p', 'log10', 'log2', 'modf', 'pow', 'radians', 'remainder', 'sin', 'sinh', 'sqrt', 'tan', 'tanh', 'trunc', 'prod', 'perm', 'comb', 'nextafter', 'ulp', 'pi', 'e', 'tau', 'inf', 'nan']
+        #use the list to filter the local namespace
+        safe_dict = dict([ (k, locals().get(k, None)) for k in safe_list ])
+        #add any needed builtins back in.
+        # ['abs', 'all', 'any', 'ascii', 'bin', 'chr', 'divmod', 'format', 'getattr', 'hasattr', 'hash', 'hex', 'id', 'iter', 'aiter', 'len', 'max', 'min', 'next', 'anext', 'oct', 'ord', 'pow', 'repr', 'round', 'sorted', 'sum', 'None', 'False', 'True', 'bool', 'bytearray', 'bytes', 'complex', 'dict', 'enumerate', 'filter', 'float', 'frozenset', 'property', 'int', 'list', 'map', 'object', 'range', 'reversed', 'set', 'slice', 'str', 'super', 'tuple', 'zip']
+        safe_dict = {
+            'context': context,
+            'scene': scene,
+            'C': C,
+            'dp': dp,
+            'D': D,
+            'S': S,
+            'bpy': bpy,
+            'C': C,
+            'D': D,
+            'Vector': Vector,
+            'Matrix': Matrix,
+            'Euler': Euler,
+            'Quaternion': Quaternion,
+            'Color': Color,
+            'geometry': geometry,
+            'interpolate': interpolate,
+            'noise': noise,
+            'bvhtree': bvhtree,
+            'kdtree': kdtree,
+            'acos': acos,
+            'acosh': acosh,
+            'asin': asin,
+            'asinh': asinh,
+            'atan': atan,
+            'atan2': atan2,
+            'atanh': atanh,
+            'ceil': ceil,
+            'copysign': copysign,
+            'cos': cos,
+            'cosh': cosh,
+            'degrees': degrees,
+            'dist': dist,
+            'erf': erf,
+            'erfc': erfc,
+            'exp': exp,
+            'expm1': expm1,
+            'fabs': fabs,
+            'factorial': factorial,
+            'floor': floor,
+            'fmod': fmod,
+            'frexp': frexp,
+            'fsum': fsum,
+            'gamma': gamma,
+            'gcd': gcd,
+            'hypot': hypot,
+            'isclose': isclose,
+            'isfinite': isfinite,
+            'isinf': isinf,
+            'isnan': isnan,
+            'isqrt': isqrt,
+            'lcm': lcm,
+            'ldexp': ldexp,
+            'lgamma': lgamma,
+            'log': log,
+            'log1p': log1p,
+            'log10': log10,
+            'log2': log2,
+            'modf': modf,
+            'pow': pow,
+            'radians': radians,
+            'remainder': remainder,
+            'sin': sin,
+            'sinh': sinh,
+            'sqrt': sqrt,
+            'tan': tan,
+            'tanh': tanh,
+            'trunc': trunc,
+            'prod': prod,
+            'perm': perm,
+            'comb': comb,
+            'nextafter': nextafter,
+            'ulp': ulp,
+            'pi': pi,
+            'e': e,
+            'tau': tau,
+            'inf': inf,
+            'nan': nan,
+        
+
+            'abs': abs,
+            'all': all,
+            'any': any,
+            'ascii': ascii,
+            'bin': bin,
+            'chr': chr,
+            'divmod': divmod,
+            'format': format,
+            # 'getattr': getattr,
+            # 'hasattr': hasattr,
+            'hash': hash,
+            'hex': hex,
+            'id': id,
+            'iter': iter,
+            'aiter': aiter,
+            'len': len,
+            'max': max,
+            'min': min,
+            'next': next,
+            'anext': anext,
+            'oct': oct,
+            'ord': ord,
+            'pow': pow,
+            'repr': repr,
+            'round': round,
+            'sorted': sorted,
+            'sum': sum,
+            'None': None,
+            'False': False,
+            'True': True,
+            'bool': bool,
+            'bytearray': bytearray,
+            'bytes': bytes,
+            'complex': complex,
+            'dict': dict,
+            'enumerate': enumerate,
+            'filter': filter,
+            'float': float,
+            'frozenset': frozenset,
+            'property': property,
+            'int': int,
+            'list': list,
+            'map': map,
+            'object': object,
+            'range': range,
+            'reversed': reversed,
+            'set': set,
+            'slice': slice,
+            'str': str,
+            'super': super,
+            'tuple': tuple,
+            'zip': zip
+        }
+        # print(expr)
+
+        return eval(expr, {"__builtins__":None}, safe_dict)
+
+
+        # bpy.context.preferences.filepaths.use_scripts_auto_execute
+        # return eval(expr)
+    except Exception as er:
+        print('Expr Error: ', er)
+        return 0
 def dyn_get_str(self):
     return str(dyn_get(self))
+
+
+######
+
+
+######
+
+
 #
 class TextCounter_Props(bpy.types.PropertyGroup):
     def val_up(self, context):
-        textcounter_update_val(context.object, context.scene)
+        textcounter_update_val(context.object, context.scene, context.evaluated_depsgraph_get())
     ifAnimated = BoolProperty(name='Counter Active', default=False, update=val_up)
     counter = FloatProperty(name='Counter', update=val_up)
     padding = IntProperty(name='Padding', update=val_up, min=1)
@@ -257,7 +423,7 @@ class TEXTCOUNTER1_PT_panel(bpy.types.Panel):
 
 
 
-def textcounter_update_val(text, scene):
+def textcounter_update_val(text, scene, depsgraph):
     def formatPaddingCommas(line):
         # left_len = len(str(int(line)))
         # left_len = ceil(log(abs(line))/log(10))
@@ -290,10 +456,10 @@ def textcounter_update_val(text, scene):
     if props.typeEnum == 'ANIMATED':
         counter = props.counter
     elif props.typeEnum == 'DYNAMIC':
-        counter = dyn_get(props, scene)
+        counter = dyn_get(props, scene, depsgraph)
 
     isNumeric=True #always true for counter not overrided
-    if props.ifTextFile:
+    if props.ifTextFile and props.textFile:
         txt = bpy.data.texts[props.textFile]
         clampedCounter = max(0, min(int(counter), len(txt.lines)-1))
         line = txt.lines[clampedCounter].body
@@ -346,19 +512,22 @@ def textcounter_update_val(text, scene):
             out = formatCounter(line, props.timeSeparators, props.timeLeadZeroes, props.timeTrailZeroes, props.timeModulo)
 
     #prefix/sufix
-    if props.ifTextFile:
+    if props.ifTextFile and props.textFile:
         text.original.data.body = out
+        # text.data.body = out
         if props.ifTextFormatting and isNumeric:
             text.original.data.body = props.prefix + neg + out + props.sufix
     else:
         text.original.data.body = props.prefix + neg + out + props.sufix
+    text.original.update_tag(refresh={'OBJECT', 'DATA', 'TIME'})
 
 @persistent
 def textcounter_text_update_frame(scene, depsgraph=None):
+    evaluated_scene = scene.evaluated_get(depsgraph)
     for object_inst in depsgraph.object_instances:
         text = object_inst.object
         if text.type == 'FONT' and text.data.text_counter_props.ifAnimated:
-            textcounter_update_val(text, scene.evaluated_get(depsgraph))
+            textcounter_update_val(text, evaluated_scene, depsgraph)
 
 classes = (
     TextCounter_Props,
