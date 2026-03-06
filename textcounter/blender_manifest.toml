@@ -1,0 +1,29 @@
+schema_version = "1.0.0"
+
+id = "leomoon_textcounter"
+version = "2.0.0"
+name = "LeoMoon TextCounter"
+tagline = "Animatable text counter for HUDs, scoreboards and timers"
+maintainer = "Amin Babaeipanah <contact@leomoon.com>"
+type = "add-on"
+
+website = "https://leomoon.com/downloads/plugins/leomoon-textcounter/"
+
+tags = ["Animation", "Object"]
+
+blender_version_min = "5.1.0"
+
+license = [
+  "SPDX:GPL-3.0-or-later",
+]
+
+# Files/folders to exclude from the built .zip
+[build]
+paths_exclude_pattern = [
+  "__pycache__/",
+  "*.pyc",
+  "*.zip",
+  ".git/",
+  "tests/",
+  "legacy/",
+]

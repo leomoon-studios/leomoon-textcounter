@@ -1,0 +1,34 @@
+[project]
+name = "leomoon-textcounter"
+version = "2.0.0"
+description = "LeoMoon TextCounter — Blender 5.1+ extension"
+requires-python = ">=3.11"
+
+[tool.ruff]
+target-version = "py311"
+line-length = 100
+extend-exclude = ["legacy", ".venv", "build"]
+
+[tool.ruff.lint]
+select = [
+  "E",   # pycodestyle errors
+  "F",   # pyflakes
+  "I",   # isort
+  "B",   # bugbear
+  "UP",  # pyupgrade
+  "SIM", # simplify
+]
+ignore = [
+  "E501", # line length (handled by formatter)
+  "B008", # function calls in defaults (Blender bpy.props pattern)
+]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/*" = ["E402"]
+"textcounter/presets/*.py" = ["F401", "E402"]  # bpy import is required by preset spec
+
+[tool.mypy]
+python_version = "3.11"
+warn_unused_ignores = true
+ignore_missing_imports = true
+exclude = ["legacy", "build"]
