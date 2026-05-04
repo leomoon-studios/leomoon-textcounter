@@ -21,7 +21,7 @@ More info / download: https://leomoon.com/downloads/plugins/leomoon-textcounter/
 
 ## Changelog
 
-- 2.0.0 - 2026-04-03:
+- 2.0.0 - 2026-03-05:
     - Ported to Blender 5.1+ modern extension format
     - Dynamic expression evaluator with safe sandboxed namespace
     - Live property updates (no timeline scrub required)
