@@ -16,6 +16,8 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Fetch all history for changelog generation
 
       - name: Extract plugin and Blender version
         id: get_version
@@ -29,13 +31,31 @@ jobs:
         run: |
           ZIP_NAME="leomoon-textcounter-${{ steps.get_version.outputs.plugin_version }}_blender-${{ steps.get_version.outputs.blender_version }}.zip"
           cd textcounter
-          zip -r "../$ZIP_NAME" . -x '__pycache__/*' '*.pyc' '*.pyo' '*.zip' '.git/*' 'tests/*' 'legacy/*' '.venv/*'
+          zip -r "../$ZIP_NAME" . \
+            -x '__pycache__/*' '*/__pycache__/*' \
+               '*.pyc' '*.pyo' \
+               '*.zip' \
+               '.git/*' \
+               'tests/*' \
+               'legacy/*' \
+               '.venv/*'
           echo "zip_name=$ZIP_NAME" >> $GITHUB_ENV
+
+      - name: Get commits since last tag
+        id: changelog
+        run: |
+          PREV_TAG=$(git tag --sort=-v:refname | head -n2 | tail -n1)
+          echo "Previous tag: $PREV_TAG"
+          LOG=$(git log "$PREV_TAG"..HEAD --pretty=format:"- %s (%h by %an)")
+          echo "$LOG"
+          echo "CHANGELOG<<EOF" >> $GITHUB_ENV
+          echo "$LOG" >> $GITHUB_ENV
+          echo "EOF" >> $GITHUB_ENV
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
           files: ${{ env.zip_name }}
-          generate_release_notes: true
+          body: ${{ env.CHANGELOG }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
